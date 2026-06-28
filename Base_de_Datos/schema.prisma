@@ -1,0 +1,916 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String                  @id @default(cuid())
+  email                String                  @unique
+  passwordHash         String                  @map("password_hash")
+  name                 String                  @map("nombre")
+  phone                String?                 @map("telefono")
+  role                 String                  @map("rol")
+  isActive             Boolean                 @default(true) @map("activo")
+  emailVerified        Boolean                 @default(false) @map("email_verificado")
+  fcmToken             String?                 @map("fcm_token")
+  verificationStatus   String                  @default("pending") @map("estado_verificacion")
+  verificationDeadline DateTime?               @map("limite_verificacion")
+  legalDocuments       String?                 @map("documentos_legales")
+  createdAt            DateTime                @default(now()) @map("creado_en")
+  updatedAt            DateTime                @updatedAt @map("actualizado_en")
+
+  appointmentsAsDoctor    Appointment[]           @relation("DoctorAppointments")
+  appointmentsAsPatient   Appointment[]           @relation("PatientAppointments")
+  auditLogs               AuditLog[]
+  deliveryDriverProfile   DeliveryDriverProfile?
+  deliveryOrdersAsPatient DeliveryOrder[]         @relation("PatientDeliveries")
+  deliveryOrdersAsDriver  DeliveryOrder[]         @relation("DriverDeliveries")
+  doctorProfile           DoctorProfile?
+  patientProfile          PatientProfile?
+  pharmacyManagerProfile  PharmacyManagerProfile?
+  prescriptionsAsDoctor   Prescription[]          @relation("DoctorPrescriptions")
+  prescriptionsAsPatient  Prescription[]          @relation("PatientPrescriptions")
+  receptionistProfile     ReceptionistProfile?
+  refreshTokens           RefreshToken[]
+  salesAsPatient          Sale[]                  @relation("PatientSales")
+  chatParticipants        ChatParticipant[]
+  chatMessages            ChatMessage[]
+  reviews                 Review[]
+  caregiverRelations      FamilyRelationship[]    @relation("CaregiverRelations")
+  patientRelations        FamilyRelationship[]    @relation("PatientRelations")
+  sentInvitations         Invitation[]            @relation("SentInvitations")
+  betaFeedbacks           BetaFeedback[]
+  pushTokens              PushToken[]
+  doctorDocumentsUploaded DoctorDocument[]        @relation("DoctorDocumentUploader")
+  doctorDocumentsVerified DoctorDocument[]        @relation("DoctorDocumentVerifier")
+  clinicDocumentsUploaded ClinicDocument[]        @relation("ClinicDocumentUploader")
+  clinicDocumentsVerified ClinicDocument[]        @relation("ClinicDocumentVerifier")
+  pharmacyDocumentsUploaded PharmacyDocument[]    @relation("PharmacyDocumentUploader")
+  pharmacyDocumentsVerified PharmacyDocument[]    @relation("PharmacyDocumentVerifier")
+  notifications           Notification[]          @relation("UserNotifications")
+  settings                UserSettings?
+  medicationReminders     MedicationReminder[]    @relation("UserMedicationReminders")
+  twoFactorSessions       TwoFactorSession[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("usuarios")
+}
+
+model PatientProfile {
+  userId           String   @id @map("usuario_id")
+  dateOfBirth      String?  @map("fecha_nacimiento")
+  bloodType        String?  @map("grupo_sanguineo")
+  allergies        String?  @map("alergias")
+  medicalNotes     String?  @map("notas_medicas")
+  emergencyContact String?  @map("contacto_emergencia")
+  emergencyPhone   String?  @map("telefono_emergencia")
+  createdAt        DateTime @default(now()) @map("creado_en")
+  updatedAt        DateTime @updatedAt @map("actualizado_en")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("perfiles_pacientes")
+}
+
+model DoctorProfile {
+  userId        String   @id @map("usuario_id")
+  clinicId      String   @map("clinica_id")
+  specialty     String   @default("Medicina General") @map("especialidad_defecto")
+  licenseNumber String   @unique @map("numero_licencia")
+  signaturePin  String?  @map("pin_firma")
+  createdAt     DateTime @default(now()) @map("creado_en")
+  updatedAt     DateTime @updatedAt @map("actualizado_en")
+  clinic        Clinic   @relation(fields: [clinicId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialties   DoctorProfileSpecialty[]
+
+  @@index([clinicId])
+  @@map("perfiles_medicos")
+}
+
+model PharmacyManagerProfile {
+  userId     String    @id @map("usuario_id")
+  pharmacyId String?   @map("farmacia_id")
+  createdAt  DateTime  @default(now()) @map("creado_en")
+  updatedAt  DateTime  @updatedAt @map("actualizado_en")
+  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("perfiles_administradores_farmacia")
+}
+
+model DeliveryDriverProfile {
+  userId         String   @id @map("usuario_id")
+  pharmacyId     String?  @map("farmacia_id")
+  vehicleType    String   @default("motocicleta") @map("tipo_vehiculo")
+  licensePlate   String?  @map("placa_licencia")
+  isAvailable    Boolean  @default(true) @map("disponible")
+  currentLat     Float?   @map("latitud_actual")
+  currentLng     Float?   @map("longitud_actual")
+  employmentType String   @default("contractor") @map("tipo_empleo")
+  baseSalary     Float?   @map("salario_base")
+  createdAt      DateTime @default(now()) @map("creado_en")
+  updatedAt      DateTime @updatedAt @map("actualizado_en")
+  pharmacy       Pharmacy? @relation(fields: [pharmacyId], references: [id])
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([pharmacyId])
+  @@map("perfiles_repartidores")
+}
+
+model ReceptionistProfile {
+  userId    String   @id @map("usuario_id")
+  clinicId  String?  @map("clinica_id")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
+  clinic    Clinic?  @relation(fields: [clinicId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@map("perfiles_recepcionistas")
+}
+
+model EstablishmentAddress {
+  id        String   @id @default(cuid())
+  address   String   @map("direccion")
+  latitude  Float    @map("latitud")
+  longitude Float    @map("longitud")
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  clinics    Clinic[]
+  pharmacies Pharmacy[]
+
+  @@map("direcciones_establecimientos")
+}
+
+model Clinic {
+  id        String   @id @default(cuid())
+  name      String   @map("nombre")
+  addressId String   @map("direccion_id")
+  phone     String?  @map("telefono")
+  isActive  Boolean  @default(true) @map("activo")
+  ownerId   String?  @map("propietario_id")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
+
+  address              EstablishmentAddress  @relation(fields: [addressId], references: [id])
+  appointments         Appointment[]
+  doctorProfiles       DoctorProfile[]
+  prescriptions        Prescription[]
+  receptionistProfiles ReceptionistProfile[]
+  sales                Sale[]
+  invitations          Invitation[]
+  clinicDocuments      ClinicDocument[]
+  settings             ClinicSettings?
+
+  @@index([isActive])
+  @@map("clinics")
+}
+
+model Pharmacy {
+  id          String   @id @default(cuid())
+  name        String   @map("nombre")
+  addressId   String   @map("direccion_id")
+  phone       String?  @map("telefono")
+  isActive    Boolean  @default(true) @map("activo")
+  deliveryFee Float    @default(29.90) @map("tarifa_envio")
+  ownerId     String?  @map("propietario_id")
+  createdAt   DateTime @default(now()) @map("creado_en")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  address                 EstablishmentAddress      @relation(fields: [addressId], references: [id])
+  deliveryOrders          DeliveryOrder[]
+  inventory               Inventory[]
+  pharmacyManagerProfiles PharmacyManagerProfile[]
+  deliveryDriverProfiles  DeliveryDriverProfile[]
+  fulfilledPrescriptions  Prescription[]            @relation("FulfilledPharmacy")
+  sales                   Sale[]
+  invitations             Invitation[]
+  pharmacyDocuments       PharmacyDocument[]
+  settings                PharmacySettings?
+
+  @@index([isActive])
+  @@map("pharmacies")
+}
+
+model ActiveSubstance {
+  id          String   @id @default(cuid())
+  name        String   @unique @map("nombre")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+
+  medicines   MedicineActiveSubstance[]
+
+  @@map("principios_activos")
+}
+
+model DosageForm {
+  id          String   @id @default(cuid())
+  name        String   @unique @map("nombre")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+
+  medicines   Medicine[]
+
+  @@map("presentaciones")
+}
+
+model Medicine {
+  id                   String             @id @default(cuid())
+  name                 String             @map("nombre")
+  description          String?            @map("descripcion")
+  dosageFormId         String             @map("presentacion_id")
+  concentration        String?            @map("concentracion")
+  requiresPrescription Boolean            @default(true) @map("requiere_receta")
+  controlType          String             @default("NORMAL") @map("tipo_control")
+  isActive             Boolean            @default(true) @map("activo")
+  createdAt            DateTime           @default(now()) @map("creado_en")
+  updatedAt            DateTime           @updatedAt @map("actualizado_en")
+
+  dosageForm           DosageForm                @relation(fields: [dosageFormId], references: [id])
+  activeSubstances     MedicineActiveSubstance[]
+  inventory            Inventory[]
+  prescriptionLines    PrescriptionLine[]
+  saleItems            SaleItem[]
+
+  @@index([name])
+  @@map("medicamentos")
+}
+
+model MedicineActiveSubstance {
+  medicineId        String @map("medicamento_id")
+  activeSubstanceId String @map("principio_activo_id")
+
+  medicine          Medicine        @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  activeSubstance   ActiveSubstance @relation(fields: [activeSubstanceId], references: [id], onDelete: Cascade)
+
+  @@id([medicineId, activeSubstanceId])
+  @@map("medicamento_principios")
+}
+
+model Inventory {
+  id         String   @id @default(cuid())
+  pharmacyId String   @map("farmacia_id")
+  medicineId String   @map("medicamento_id")
+  quantity   Int      @default(0) @map("cantidad")
+  minStock   Int      @default(10) @map("stock_minimo")
+  unitPrice  Float    @default(0) @map("precio_unitario")
+  createdAt  DateTime @default(now()) @map("creado_en")
+  updatedAt  DateTime @updatedAt @map("actualizado_en")
+
+  medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  pharmacy   Pharmacy @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  movements  InventoryMovement[]
+  batches    InventoryBatch[]
+
+  @@unique([pharmacyId, medicineId])
+  @@index([pharmacyId])
+  @@index([medicineId])
+  @@map("inventarios")
+}
+
+model InventoryBatch {
+  id             String    @id @default(cuid())
+  inventoryId    String    @map("inventario_id")
+  batchNumber    String    @map("numero_lote")
+  quantity       Int       @map("cantidad")
+  costPrice      Float?    @map("precio_costo")
+  sellingPrice   Float?    @map("precio_venta")
+  expirationDate DateTime? @map("fecha_vencimiento")
+  supplier       String?   @map("proveedor")
+  createdAt      DateTime  @default(now()) @map("creado_en")
+  updatedAt      DateTime  @updatedAt @map("actualizado_en")
+
+  inventory      Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  movements      InventoryMovement[]
+  saleItems      SaleItem[]
+
+  @@index([inventoryId])
+  @@index([expirationDate])
+  @@map("lotes_inventario")
+}
+
+model Appointment {
+  id                 String    @id @default(cuid())
+  patientId          String    @map("paciente_id")
+  doctorId           String    @map("medico_id")
+  clinicId           String    @map("clinica_id")
+  dateTime           DateTime  @map("fecha_hora")
+  durationMinutes    Int       @default(30) @map("duracion_minutos")
+  status             String    @default("scheduled") @map("estado")
+  cancellationReason String?   @map("motivo_cancelacion")
+  notes              String?   @map("notas")
+  createdAt          DateTime  @default(now()) @map("creado_en")
+  updatedAt          DateTime  @updatedAt @map("actualizado_en")
+
+  clinic             Clinic    @relation(fields: [clinicId], references: [id])
+  doctor             User      @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  patient            User      @relation("PatientAppointments", fields: [patientId], references: [id])
+  prescriptions      Prescription[]
+  sale               Sale?
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([clinicId])
+  @@index([dateTime])
+  @@map("citas")
+}
+
+model Prescription {
+  id                  String             @id @default(cuid())
+  patientId           String             @map("paciente_id")
+  doctorId            String             @map("medico_id")
+  clinicId            String             @map("clinica_id")
+  appointmentId       String?            @map("cita_id")
+  status              String             @default("active") @map("estado")
+  qrCode              String?            @unique @map("codigo_qr")
+  verificationCode    String?            @unique @map("codigo_verificacion")
+  digitalSignature    String?            @map("firma_digital")
+  notes               String?            @map("notas")
+  issuedAt            DateTime           @default(now()) @map("emitida_en")
+  expirationDate      String             @map("fecha_expiracion")
+  fulfilledAt         DateTime?          @map("surtida_en")
+  fulfilledPharmacyId String?            @map("farmacia_surtido_id")
+  createdAt           DateTime           @default(now()) @map("creado_en")
+  updatedAt           DateTime           @updatedAt @map("actualizado_en")
+
+  prescriptionLines   PrescriptionLine[]
+  fulfilledPharmacy   Pharmacy?          @relation("FulfilledPharmacy", fields: [fulfilledPharmacyId], references: [id])
+  appointment         Appointment?       @relation(fields: [appointmentId], references: [id])
+  clinic              Clinic             @relation(fields: [clinicId], references: [id])
+  doctor              User               @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  patient             User               @relation("PatientPrescriptions", fields: [patientId], references: [id])
+  sales               Sale[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([status])
+  @@map("recetas")
+}
+
+model PrescriptionLine {
+  id                 String       @id @default(cuid())
+  prescriptionId     String       @map("receta_id")
+  medicineId         String       @map("medicamento_id")
+  quantity           Int          @map("cantidad")
+  dosageInstructions String       @map("instrucciones_dosis")
+  quantityFulfilled  Int          @default(0) @map("cantidad_surtida")
+  createdAt          DateTime     @default(now()) @map("creado_en")
+  updatedAt          DateTime     @updatedAt @map("actualizado_en")
+
+  medicine           Medicine     @relation(fields: [medicineId], references: [id])
+  prescription       Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medicationReminders MedicationReminder[] @relation("LineMedicationReminders")
+
+  @@index([prescriptionId])
+  @@index([medicineId])
+  @@map("lineas_receta")
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  name        String   @unique @map("nombre")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+
+  payments    Payment[]
+
+  @@map("metodos_pago")
+}
+
+model Sale {
+  id              String         @id @default(cuid())
+  pharmacyId      String?        @map("farmacia_id")
+  clinicId        String?        @map("clinica_id")
+  patientId       String?        @map("paciente_id")
+  prescriptionId  String?        @map("receta_id")
+  appointmentId   String?        @unique @map("cita_id")
+  isDelivery      Boolean        @default(false) @map("es_envio")
+  deliveryAddress String?        @map("direccion_envio")
+  deliveryLat     Float?         @map("latitud_envio")
+  deliveryLng     Float?         @map("longitud_envio")
+  deliveryNotes   String?        @map("notas_envio")
+  status          String         @default("pending") @map("estado")
+  totalAmount     Float          @default(0) @map("monto_total")
+  createdAt       DateTime       @default(now()) @map("creado_en")
+  updatedAt       DateTime       @updatedAt @map("actualizado_en")
+
+  deliveryOrder   DeliveryOrder?
+  saleItems       SaleItem[]
+  prescription    Prescription?  @relation(fields: [prescriptionId], references: [id])
+  patient         User?          @relation("PatientSales", fields: [patientId], references: [id])
+  pharmacy        Pharmacy?      @relation(fields: [pharmacyId], references: [id])
+  clinic          Clinic?        @relation(fields: [clinicId], references: [id])
+  appointment     Appointment?   @relation(fields: [appointmentId], references: [id])
+  payments        Payment[]
+
+  @@index([pharmacyId])
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([status])
+  @@map("ventas")
+}
+
+model SaleItem {
+  id         String   @id @default(cuid())
+  saleId     String   @map("venta_id")
+  medicineId String   @map("medicamento_id")
+  quantity   Int      @map("cantidad")
+  unitPrice  Float    @map("precio_unitario")
+  batchId    String?  @map("lote_id")
+  createdAt  DateTime @default(now()) @map("creado_en")
+
+  medicine   Medicine        @relation(fields: [medicineId], references: [id])
+  sale       Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  batch      InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@map("articulos_venta")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  saleId        String?  @map("venta_id")
+  amount        Float    @map("monto")
+  currency      String   @map("moneda")
+  methodId      String   @map("metodo_pago_id")
+  status        String   @map("estado")
+  transactionId String?  @map("id_transaccion")
+  notes         String?  @map("notas")
+  createdAt     DateTime @default(now()) @map("creado_en")
+  updatedAt     DateTime @updatedAt @map("actualizado_en")
+
+  sale          Sale?         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [methodId], references: [id])
+
+  @@map("pagos")
+}
+
+model DeliveryStatus {
+  id          String   @id @default(cuid())
+  name        String   @unique @map("nombre")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+
+  deliveryOrders DeliveryOrder[]
+
+  @@map("estados_envio")
+}
+
+model DeliveryOrder {
+  id               String    @id @default(cuid())
+  saleId           String    @unique @map("venta_id")
+  pharmacyId       String    @map("farmacia_id")
+  deliveryDriverId String?   @map("repartidor_id")
+  patientId        String    @map("paciente_id")
+  pickupAddress    String    @map("direccion_recoleccion")
+  pickupLat        Float     @map("latitud_recoleccion")
+  pickupLng        Float     @map("longitud_recoleccion")
+  deliveryAddress  String    @map("direccion_entrega")
+  deliveryLat      Float     @map("latitud_entrega")
+  deliveryLng      Float     @map("longitud_entrega")
+  statusId         String    @map("estado_envio_id")
+  assignedAt       DateTime? @map("asignado_en")
+  pickedUpAt       DateTime? @map("recolectado_en")
+  deliveredAt      DateTime? @map("entregado_en")
+  notes            String?   @map("notas")
+  createdAt        DateTime  @default(now()) @map("creado_en")
+  updatedAt        DateTime  @updatedAt @map("actualizado_en")
+
+  patient          User            @relation("PatientDeliveries", fields: [patientId], references: [id])
+  deliveryDriver   User?           @relation("DriverDeliveries", fields: [deliveryDriverId], references: [id])
+  pharmacy         Pharmacy        @relation(fields: [pharmacyId], references: [id])
+  sale             Sale            @relation(fields: [saleId], references: [id])
+  status           DeliveryStatus  @relation(fields: [statusId], references: [id])
+  deliveryRoutes   DeliveryRoute[]
+
+  @@index([saleId])
+  @@index([pharmacyId])
+  @@index([deliveryDriverId])
+  @@index([patientId])
+  @@map("pedidos_entrega")
+}
+
+model DeliveryRoute {
+  id              String        @id @default(cuid())
+  deliveryOrderId String        @map("pedido_entrega_id")
+  driverLat       Float         @map("latitud_repartidor")
+  driverLng       Float         @map("longitud_repartidor")
+  recordedAt      DateTime      @default(now()) @map("registrado_en")
+
+  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryOrderId])
+  @@index([recordedAt])
+  @@map("rutas_entrega")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?  @map("usuario_id")
+  action     String   @map("accion")
+  entityType String   @map("tipo_entidad")
+  entityId   String?  @map("id_entidad")
+  details    String?  @map("detalles")
+  ipAddress  String?  @map("direccion_ip")
+  userAgent  String?  @map("agente_usuario")
+  createdAt  DateTime @default(now()) @map("creado_en")
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("bitacoras_auditoria")
+}
+
+model TwoFactorSession {
+  id          String    @id @default(cuid())
+  userId      String    @map("usuario_id")
+  secret      String    @map("secreto")
+  isActive    Boolean   @default(false) @map("activo")
+  attempts    Int       @default(0) @map("intentos")
+  lockedUntil DateTime? @map("bloqueado_hasta")
+  createdAt   DateTime  @default(now()) @map("creado_en")
+  updatedAt   DateTime  @updatedAt @map("actualizado_en")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sesiones_2fa")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("usuario_id")
+  tokenHash String    @unique @map("hash_token")
+  expiresAt DateTime  @map("expira_en")
+  revokedAt DateTime? @map("revocado_en")
+  createdAt DateTime  @default(now()) @map("creado_en")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("tokens_refresh")
+}
+
+model InventoryMovement {
+  id             String   @id @default(cuid())
+  inventoryId    String   @map("inventario_id")
+  userId         String?  @map("usuario_id")
+  batchId        String?  @map("lote_id")
+  type           String   @map("tipo")
+  quantityChange Int      @map("cambio_cantidad")
+  reason         String?  @map("motivo")
+  createdAt      DateTime @default(now()) @map("creado_en")
+
+  inventory      Inventory       @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  batch          InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@index([inventoryId])
+  @@index([inventoryId, createdAt])
+  @@map("movimientos_inventario")
+}
+
+model ChatSession {
+  id          String        @id @default(cuid())
+  type        String        @map("tipo")
+  targetId    String?       @map("id_objetivo")
+  isActive    Boolean       @default(true) @map("activo")
+  createdAt   DateTime      @default(now()) @map("creado_en")
+  updatedAt   DateTime      @updatedAt @map("actualizado_en")
+
+  messages    ChatMessage[]
+  participants ChatParticipant[]
+
+  @@map("sesiones_chat")
+}
+
+model ChatParticipant {
+  id        String      @id @default(cuid())
+  sessionId String      @map("sesion_id")
+  userId    String      @map("usuario_id")
+
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("chat_participants")
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String      @map("sesion_id")
+  senderId  String      @map("remitente_id")
+  content   String      @map("contenido")
+  isRead    Boolean     @default(false) @map("leido")
+  createdAt DateTime    @default(now()) @map("creado_en")
+
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender    User        @relation(fields: [senderId], references: [id])
+
+  @@map("chat_messages")
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String   @map("usuario_id")
+  targetId   String   @map("id_objetivo")
+  targetType String   @map("tipo_objetivo")
+  rating     Int      @map("calificacion")
+  comment    String?  @map("comentario")
+  createdAt  DateTime @default(now()) @map("creado_en")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("resenas")
+}
+
+model FamilyRelationship {
+  id               String    @id @default(cuid())
+  caregiverId      String    @map("cuidador_id")
+  patientId        String    @map("paciente_id")
+  relationship     String    @map("parentesco")
+  isActive         Boolean   @default(true) @map("activo")
+  status           String    @default("active") @map("estado")
+  verificationCode String?   @map("codigo_verificacion")
+  codeExpiresAt    DateTime? @map("expiracion_codigo")
+  permissions      String[]  @default(["view_health_data", "buy_medicines", "schedule_appointments"]) @map("permisos")
+  createdAt        DateTime  @default(now()) @map("creado_en")
+  updatedAt        DateTime  @updatedAt @map("actualizado_en")
+
+  caregiver        User      @relation("CaregiverRelations", fields: [caregiverId], references: [id], onDelete: Cascade)
+  patient          User      @relation("PatientRelations", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([caregiverId, patientId])
+  @@index([verificationCode])
+  @@map("relaciones_familiares")
+}
+
+model DoctorSpecialty {
+  id          String                   @id @default(cuid())
+  name        String                   @unique @map("nombre")
+  description String?                  @map("descripcion")
+  createdAt   DateTime                 @default(now()) @map("creado_en")
+  updatedAt   DateTime                 @updatedAt @map("actualizado_en")
+
+  doctors     DoctorProfileSpecialty[]
+
+  @@map("especialidades_medicas")
+}
+
+model DoctorProfileSpecialty {
+  doctorId    String          @map("medico_id")
+  specialtyId String          @map("especialidad_id")
+  createdAt   DateTime        @default(now()) @map("creado_en")
+
+  doctor      DoctorProfile   @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  specialty   DoctorSpecialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, specialtyId])
+  @@map("especialidades_perfil_medico")
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  email      String
+  role       String    @map("rol")
+  token      String    @unique
+  expiresAt  DateTime  @map("expira_en")
+  isAccepted Boolean   @default(false) @map("aceptada")
+  senderId   String    @map("remitente_id")
+  clinicId   String?   @map("clinica_id")
+  pharmacyId String?   @map("farmacia_id")
+  createdAt  DateTime  @default(now()) @map("creado_en")
+  updatedAt  DateTime  @updatedAt @map("actualizado_en")
+
+  sender     User      @relation("SentInvitations", fields: [senderId], references: [id], onDelete: Cascade)
+  clinic     Clinic?   @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id], onDelete: SetNull)
+
+  @@index([token])
+  @@index([email])
+  @@map("invitaciones")
+}
+
+model BetaFeedback {
+  id        String   @id @default(cuid())
+  userId    String?  @map("usuario_id")
+  type      String   @map("tipo")
+  content   String   @map("contenido")
+  status    String   @default("pending") @map("estado")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([status])
+  @@map("comentarios_beta")
+}
+
+model PushToken {
+  id         String   @id @default(cuid())
+  userId     String   @map("usuario_id")
+  token      String   @unique
+  deviceInfo String?  @map("informacion_dispositivo")
+  createdAt  DateTime @default(now()) @map("creado_en")
+  updatedAt  DateTime @updatedAt @map("actualizado_en")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tokens_push")
+}
+
+model DoctorDocument {
+  id              String    @id @default(cuid())
+  doctorId        String    @map("medico_id")
+  type            String    @map("tipo")
+  documentUrl     String    @map("url_documento")
+  expiryDate      DateTime? @map("fecha_expiracion")
+  verifiedBy      String?   @map("verificado_por")
+  verifiedAt      DateTime? @map("verificado_en")
+  status          String    @default("pending") @map("estado")
+  rejectionReason String?   @map("motivo_rechazo")
+  notes           String?   @map("notas")
+  createdAt       DateTime  @default(now()) @map("creado_en")
+  updatedAt       DateTime  @updatedAt @map("actualizado_en")
+
+  doctor          User      @relation("DoctorDocumentUploader", fields: [doctorId], references: [id], onDelete: Cascade)
+  verifier        User?     @relation("DoctorDocumentVerifier", fields: [verifiedBy], references: [id])
+
+  @@index([doctorId])
+  @@index([status])
+  @@map("documentos_medicos")
+}
+
+model ClinicDocument {
+  id              String    @id @default(cuid())
+  clinicId        String    @map("clinica_id")
+  type            String    @map("tipo")
+  documentUrl     String    @map("url_documento")
+  expiryDate      DateTime? @map("fecha_expiracion")
+  status          String    @default("pending") @map("estado")
+  rejectionReason String?   @map("motivo_rechazo")
+  verifiedBy      String?   @map("verificado_por")
+  verifiedAt      DateTime? @map("verificado_en")
+  notes           String?   @map("notas")
+  uploadedBy      String    @map("subido_por")
+  createdAt       DateTime  @default(now()) @map("creado_en")
+  updatedAt       DateTime  @updatedAt @map("actualizado_en")
+
+  clinic          Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  verifier        User?     @relation("ClinicDocumentVerifier", fields: [verifiedBy], references: [id])
+  uploader        User      @relation("ClinicDocumentUploader", fields: [uploadedBy], references: [id])
+
+  @@index([clinicId])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("documentos_clinicos")
+}
+
+model PharmacyDocument {
+  id              String    @id @default(cuid())
+  pharmacyId      String    @map("farmacia_id")
+  type            String    @map("tipo")
+  documentUrl     String    @map("url_documento")
+  expiryDate      DateTime? @map("fecha_expiracion")
+  status          String    @default("pending") @map("estado")
+  rejectionReason String?   @map("motivo_rechazo")
+  verifiedBy      String?   @map("verificado_por")
+  verifiedAt      DateTime? @map("verificado_en")
+  notes           String?   @map("notas")
+  uploadedBy      String    @map("subido_por")
+  createdAt       DateTime  @default(now()) @map("creado_en")
+  updatedAt       DateTime  @updatedAt @map("actualizado_en")
+
+  pharmacy        Pharmacy  @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  verifier        User?     @relation("PharmacyDocumentVerifier", fields: [verifiedBy], references: [id])
+  uploader        User      @relation("PharmacyDocumentUploader", fields: [uploadedBy], references: [id])
+
+  @@index([pharmacyId])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("documentos_farmacias")
+}
+
+model GlobalSetting {
+  key         String   @id @map("clave")
+  value       String   @map("valor")
+  description String?  @map("descripcion")
+  createdAt   DateTime @default(now()) @map("creado_en")
+  updatedAt   DateTime @updatedAt @map("actualizado_en")
+
+  @@map("configuraciones_globales")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("usuario_id")
+  title     String   @map("titulo")
+  body      String   @map("cuerpo")
+  type      String   @map("tipo")
+  link      String?  @map("enlace")
+  isRead    Boolean  @default(false) @map("leido")
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notificaciones")
+}
+
+model UserSettings {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique @map("usuario_id")
+  theme                   String   @default("system") @map("tema")
+  notificationsEnabled    Boolean  @default(true) @map("notificaciones_activadas")
+  notificationPreferences Json     @default("{}") @map("preferencias_notificaciones")
+  createdAt               DateTime @default(now()) @map("creado_en")
+  updatedAt               DateTime @updatedAt @map("actualizado_en")
+
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("configuraciones_usuario")
+}
+
+model ClinicSettings {
+  id                  String   @id @default(cuid())
+  clinicId            String   @unique @map("clinica_id")
+  baseConsultationFee Float    @default(0.0) @map("tarifa_consulta_base")
+  taxRate             Float    @default(0.15) @map("tasa_impuesto")
+  defaultPermissions  String[] @default(["view_health_data", "buy_medicines", "schedule_appointments"]) @map("permisos_defecto")
+  notificationPrefs   Json     @default("{}") @map("preferencias_notificaciones")
+  insurancePartners   String[] @default([]) @map("aseguradoras_asociadas")
+  hoursOfOperation    Json     @default("{}") @map("horario_operacion")
+  createdAt           DateTime @default(now()) @map("creado_en")
+  updatedAt           DateTime @updatedAt @map("actualizado_en")
+
+  clinic              Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@map("configuraciones_clinica")
+}
+
+model PharmacySettings {
+  id                       String   @id @default(cuid())
+  pharmacyId               String   @unique @map("farmacia_id")
+  defaultVatRate           Float    @default(0.15) @map("tasa_iva_defecto")
+  ticketFooter             String?  @default("¡Gracias por su compra!") @map("pie_ticket")
+  invoiceSeries            String   @default("A") @map("serie_factura")
+  minStockAlertThreshold   Int      @default(10) @map("umbral_alerta_stock_minimo")
+  expirationAlertDays      Int      @default(90) @map("dias_alerta_vencimiento")
+  deliveryFeePerKm         Float    @default(15.0) @map("tarifa_envio_por_km")
+  deliveryCoverageRadiusKm Float    @default(10.0) @map("radio_cobertura_envio_km")
+  defaultCashierRole       String   @default("cashier") @map("rol_cajero_defecto")
+  defaultDriverRole        String   @default("delivery_driver") @map("rol_repartidor_defecto")
+  notificationPrefs        Json     @default("{}") @map("preferencias_notificaciones")
+  createdAt                DateTime @default(now()) @map("creado_en")
+  updatedAt                DateTime @updatedAt @map("actualizado_en")
+
+  pharmacy                 Pharmacy @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+
+  @@map("configuraciones_farmacia")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @map("hash_token")
+  expiresAt DateTime @map("expira_en")
+  isUsed    Boolean  @default(false) @map("usado")
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  @@index([email])
+  @@index([tokenHash])
+  @@map("tokens_recuperacion_password")
+}
+
+model MedicationReminder {
+  id                 String   @id @default(cuid())
+  userId             String   @map("usuario_id")
+  prescriptionLineId String   @map("linea_receta_id")
+  medicineName       String   @map("nombre_medicamento")
+  dosageInstructions String   @map("instrucciones_dosis")
+  scheduledTime      String   @map("hora_programada")
+  status             String   @default("pending") @map("estado")
+  lastNotified       DateTime? @map("ultima_notificacion")
+  createdAt          DateTime @default(now()) @map("creado_en")
+  updatedAt          DateTime @updatedAt @map("actualizado_en")
+
+  user             User             @relation("UserMedicationReminders", fields: [userId], references: [id], onDelete: Cascade)
+  prescriptionLine PrescriptionLine @relation("LineMedicationReminders", fields: [prescriptionLineId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([prescriptionLineId])
+  @@map("recordatorios_medicacion")
+}
