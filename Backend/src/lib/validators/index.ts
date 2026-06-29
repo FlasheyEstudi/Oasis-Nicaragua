@@ -100,6 +100,79 @@ export const seedInventorySchema = z.object({
   })).min(1, 'Al menos un item requerido'),
 });
 
+// === Validadores de Citas ===
+export const createAppointmentSchema = z.object({
+  doctor_id: z.string().min(1, 'Doctor requerido'),
+  clinic_id: z.string().min(1, 'Clínica requerida'),
+  date_time: z.string().min(1, 'Fecha y hora requeridas'),
+  duration_minutes: z.number().int().min(15).max(120).default(30),
+  notes: z.string().optional(),
+  patient_id: z.string().optional(),
+});
+
+export const updateAppointmentStatusSchema = z.object({
+  status: z.enum(['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show']),
+  cancellation_reason: z.string().optional(),
+});
+
+// === Validadores de Recetas ===
+export const createPrescriptionSchema = z.object({
+  patient_id: z.string().min(1, 'Paciente requerido'),
+  clinic_id: z.string().min(1, 'Clínica requerida'),
+  appointment_id: z.string().optional(),
+  expiration_date: z.string().min(1, 'Fecha de expiración requerida'),
+  notes: z.string().optional(),
+  signature_pin: z.string().length(4, 'El PIN debe ser de 4 dígitos').regex(/^\d+$/, 'El PIN debe contener solo dígitos'),
+  lines: z.array(z.object({
+    medicine_id: z.string().min(1, 'Medicamento requerido'),
+    quantity: z.number().int().min(1, 'Cantidad mínima: 1'),
+    dosage_instructions: z.string().min(1, 'Instrucciones de dosificación requeridas'),
+  })).min(1, 'Al menos una línea de receta requerida'),
+});
+
+export const validatePrescriptionSchema = z.object({
+  qr_data: z.string().min(1, 'QR data requerido'),
+  pharmacy_id: z.string().optional(),
+});
+
+export const fulfillPrescriptionSchema = z.object({
+  pharmacy_id: z.string().min(1, 'Farmacia requerida'),
+  items: z.array(z.object({
+    prescription_line_id: z.string().min(1),
+    quantity_fulfilled: z.number().int().min(1),
+    batches: z.array(z.object({
+      batch_id: z.string().min(1),
+      quantity: z.number().int().min(1),
+    })).optional(),
+  })).min(1, 'Al menos un item requerido'),
+});
+
+// === Validadores de Ventas ===
+export const createSaleSchema = z.object({
+  items: z.array(z.object({
+    medicine_id: z.string().min(1, 'Medicamento requerido'),
+    quantity: z.number().int().min(1, 'Cantidad mínima: 1'),
+    unit_price: z.number().min(0).optional(),
+  })).min(1, 'Al menos un item requerido'),
+  prescription_id: z.string().optional(),
+  patient_id: z.string().optional(),
+  clinic_id: z.string().optional(),
+  appointment_id: z.string().optional(),
+  is_delivery: z.boolean().default(false),
+  delivery_address: z.string().optional(),
+  delivery_lat: z.number().optional(),
+  delivery_lng: z.number().optional(),
+  notes: z.string().optional(),
+  payments: z.array(z.object({
+    amount: z.number().min(0, 'El monto debe ser positivo'),
+    method: z.enum(['cash', 'card', 'bank_transfer', 'wallet'], {
+      error: 'Método de pago inválido',
+    }),
+    currency: z.string().optional(),
+    transaction_id: z.string().optional(),
+  })).min(1, 'Al menos un método de pago requerido'),
+});
+
 // === Helper de Validación de Cuerpos (Body) ===
 export function validateBody<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; error: NextResponse } {
   const result = schema.safeParse(data);
