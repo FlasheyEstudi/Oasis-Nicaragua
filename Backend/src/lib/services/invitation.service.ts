@@ -246,17 +246,35 @@ export async function acceptInvitation(
 
     await tx.invitation.update({ where: { id: invitation.id }, data: { isAccepted: true } });
 
-    // Notificaciones Push in-app opcionales y tolerantes a fallos
+    // Notificaciones Push in-app directas en base de datos
     try {
       if (['doctor', 'receptionist'].includes(invitation.role) && invitation.clinicId) {
-        const { notifyInvitationAccepted } = await import('./event-notifications');
-        await notifyInvitationAccepted(invitation.clinicId, name, invitation.role);
+        const clinic = await tx.clinic.findUnique({ where: { id: invitation.clinicId }, select: { ownerId: true } });
+        if (clinic?.ownerId) {
+          await tx.notification.create({
+            data: {
+              userId: clinic.ownerId,
+              title: '✅ Invitación Aceptada',
+              body: `El ${invitation.role === 'doctor' ? 'médico' : 'recepcionista'} ${name} ha aceptado tu invitación.`,
+              type: 'invitation_accepted',
+            }
+          });
+        }
       } else if (['cashier', 'delivery_driver'].includes(invitation.role) && invitation.pharmacyId) {
-        const { notifyPharmacyInvitationAccepted } = await import('./event-notifications');
-        await notifyPharmacyInvitationAccepted(invitation.pharmacyId, name, invitation.role);
+        const pharmacy = await tx.pharmacy.findUnique({ where: { id: invitation.pharmacyId }, select: { ownerId: true } });
+        if (pharmacy?.ownerId) {
+          await tx.notification.create({
+            data: {
+              userId: pharmacy.ownerId,
+              title: '✅ Invitación Aceptada',
+              body: `El ${invitation.role === 'delivery_driver' ? 'repartidor' : 'cajero'} ${name} ha aceptado tu invitación.`,
+              type: 'invitation_accepted',
+            }
+          });
+        }
       }
     } catch (err) {
-      console.warn('Notification service not loaded yet:', err);
+      console.warn('Error creating invitation accepted notification:', err);
     }
 
     return user;

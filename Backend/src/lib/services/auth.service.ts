@@ -82,7 +82,7 @@ export async function setup2FA(userId: string) {
     }
   });
 
-  const otpauthUrl = authenticator.keyuri(user.email, process.env.2FA_ISSUER || 'Oasis Nicaragua', secret);
+  const otpauthUrl = authenticator.keyuri(user.email, process.env['2FA_ISSUER'] || 'Oasis Nicaragua', secret);
   return { secret, qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(otpauthUrl)}` };
 }
 

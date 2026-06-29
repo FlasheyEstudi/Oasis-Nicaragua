@@ -75,10 +75,14 @@ export async function registerUser(
         const newPharmacy = await tx.pharmacy.create({
           data: {
             name: data.entityName,
-            address: data.entityAddress || '',
+            address: {
+              create: {
+                address: data.entityAddress || '',
+                latitude: data.entityLatitude || 12.1328,
+                longitude: data.entityLongitude || -86.2504,
+              }
+            },
             phone: data.entityPhone || null,
-            latitude: data.entityLatitude || 12.1328,
-            longitude: data.entityLongitude || -86.2504,
             ownerId: user.id
           }
         });
@@ -94,10 +98,14 @@ export async function registerUser(
         const newClinic = await tx.clinic.create({
           data: {
             name: data.entityName,
-            address: data.entityAddress || '',
+            address: {
+              create: {
+                address: data.entityAddress || '',
+                latitude: data.entityLatitude || 12.1328,
+                longitude: data.entityLongitude || -86.2504,
+              }
+            },
             phone: data.entityPhone || null,
-            latitude: data.entityLatitude || 12.1328,
-            longitude: data.entityLongitude || -86.2504,
             ownerId: user.id
           }
         });

@@ -28,8 +28,8 @@ export async function getPharmacies(filters: {
 
   if (filters.search) {
     where.OR = [
-      { name: { contains: filters.search } },
-      { address: { contains: filters.search } },
+      { name: { contains: filters.search, mode: 'insensitive' } },
+      { address: { address: { contains: filters.search, mode: 'insensitive' } } },
     ];
   }
 
@@ -46,13 +46,16 @@ export async function getPharmacies(filters: {
 
   if (filters.lat !== undefined && filters.lng !== undefined) {
     const box = getBoundingBox(filters.lat, filters.lng, filters.radiusKm || 10);
-    where.latitude = { gte: box.latMin, lte: box.latMax };
-    where.longitude = { gte: box.lngMin, lte: box.lngMax };
+    where.address = {
+      latitude: { gte: box.latMin, lte: box.latMax },
+      longitude: { gte: box.lngMin, lte: box.lngMax }
+    };
   }
 
   let pharmacies = await db.pharmacy.findMany({
     where,
     include: {
+      address: true,
       _count: { select: { inventory: true, sales: true } },
       ...(filters.medicineIds && filters.medicineIds.length > 0 ? {
         inventory: {
@@ -77,7 +80,7 @@ export async function getPharmacies(filters: {
     return pharmacies
       .map((p) => ({
         ...p,
-        distance: haversineDistance(filters.lat!, filters.lng!, p.latitude, p.longitude),
+        distance: haversineDistance(filters.lat!, filters.lng!, p.address.latitude, p.address.longitude),
       }))
       .filter((p) => p.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
@@ -93,6 +96,7 @@ export async function getPharmacy(id: string) {
   const pharmacy = await db.pharmacy.findUnique({
     where: { id },
     include: {
+      address: true,
       inventory: {
         include: { medicine: true },
         where: { quantity: { gt: 0 } },
@@ -119,13 +123,18 @@ export async function createPharmacy(
   const pharmacy = await db.pharmacy.create({
     data: {
       name: data.name,
-      address: data.address,
-      latitude: data.latitude ?? 12.1328,
-      longitude: data.longitude ?? -86.2504,
+      address: {
+        create: {
+          address: data.address,
+          latitude: data.latitude ?? 12.1328,
+          longitude: data.longitude ?? -86.2504
+        }
+      },
       phone: data.phone,
       deliveryFee: data.delivery_fee ?? 29.90,
       ownerId,
     },
+    include: { address: true }
   });
 
   await createAuditLog({ userId, action: 'create', entityType: 'pharmacy', entityId: pharmacy.id, ipAddress, userAgent });
@@ -150,14 +159,21 @@ export async function updatePharmacy(
     where: { id },
     data: {
       name: data.name,
-      address: data.address,
-      latitude: data.latitude,
-      longitude: data.longitude,
       phone: data.phone,
       isActive: data.isActive,
       ...(data.delivery_fee !== undefined && { deliveryFee: data.delivery_fee }),
       ...(ownerId !== undefined && { ownerId: ownerId || null }),
+      ...(data.address !== undefined && {
+        address: {
+          update: {
+            address: data.address,
+            latitude: data.latitude ?? 12.1328,
+            longitude: data.longitude ?? -86.2504
+          }
+        }
+      })
     },
+    include: { address: true }
   });
 
   await createAuditLog({ userId, action: 'update', entityType: 'pharmacy', entityId: id, details: JSON.stringify(data), ipAddress, userAgent });

@@ -25,8 +25,8 @@ export async function getClinics(filters: {
 
   if (filters.search) {
     where.OR = [
-      { name: { contains: filters.search } },
-      { address: { contains: filters.search } },
+      { name: { contains: filters.search, mode: 'insensitive' } },
+      { address: { address: { contains: filters.search, mode: 'insensitive' } } },
     ];
   }
 
@@ -34,13 +34,18 @@ export async function getClinics(filters: {
 
   if (filters.lat !== undefined && filters.lng !== undefined) {
     const box = getBoundingBox(filters.lat, filters.lng, filters.radiusKm || 10);
-    where.latitude = { gte: box.latMin, lte: box.latMax };
-    where.longitude = { gte: box.lngMin, lte: box.lngMax };
+    where.address = {
+      latitude: { gte: box.latMin, lte: box.latMax },
+      longitude: { gte: box.lngMin, lte: box.lngMax }
+    };
   }
 
   const clinics = await db.clinic.findMany({
     where,
-    include: { _count: { select: { doctorProfiles: true, appointments: true } } },
+    include: {
+      address: true,
+      _count: { select: { doctorProfiles: true, appointments: true } }
+    },
     orderBy: { name: 'asc' },
   });
 
@@ -49,7 +54,7 @@ export async function getClinics(filters: {
     return clinics
       .map(c => ({
         ...c,
-        distance: haversineDistance(filters.lat!, filters.lng!, c.latitude ?? 12.1328, c.longitude ?? -86.2504)
+        distance: haversineDistance(filters.lat!, filters.lng!, c.address.latitude, c.address.longitude)
       }))
       .filter(c => c.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
@@ -61,17 +66,27 @@ export async function getClinics(filters: {
 /**
  * Crear clínica
  */
-export async function createClinic(data: { name: string; address: string; latitude?: number; longitude?: number; phone?: string; ownerId?: string; owner_id?: string }, userId?: string, ipAddress?: string, userAgent?: string) {
+export async function createClinic(
+  data: { name: string; address: string; latitude?: number; longitude?: number; phone?: string; ownerId?: string; owner_id?: string },
+  userId?: string,
+  ipAddress?: string,
+  userAgent?: string
+) {
   const ownerId = data.ownerId || data.owner_id || null;
   const clinic = await db.clinic.create({
     data: {
       name: data.name,
-      address: data.address,
-      latitude: data.latitude ?? 12.1328,
-      longitude: data.longitude ?? -86.2504,
+      address: {
+        create: {
+          address: data.address,
+          latitude: data.latitude ?? 12.1328,
+          longitude: data.longitude ?? -86.2504
+        }
+      },
       phone: data.phone,
       ownerId
-    }
+    },
+    include: { address: true }
   });
 
   await createAuditLog({ userId, action: 'create', entityType: 'clinic', entityId: clinic.id, ipAddress, userAgent });
@@ -81,7 +96,13 @@ export async function createClinic(data: { name: string; address: string; latitu
 /**
  * Actualizar clínica
  */
-export async function updateClinic(id: string, data: { name?: string; address?: string; latitude?: number; longitude?: number; phone?: string; isActive?: boolean; ownerId?: string; owner_id?: string }, userId?: string, ipAddress?: string, userAgent?: string) {
+export async function updateClinic(
+  id: string,
+  data: { name?: string; address?: string; latitude?: number; longitude?: number; phone?: string; isActive?: boolean; ownerId?: string; owner_id?: string },
+  userId?: string,
+  ipAddress?: string,
+  userAgent?: string
+) {
   const clinic = await db.clinic.findUnique({ where: { id } });
   if (!clinic) throw new Error('NOT_FOUND');
 
@@ -90,13 +111,20 @@ export async function updateClinic(id: string, data: { name?: string; address?: 
     where: { id },
     data: {
       name: data.name,
-      address: data.address,
-      latitude: data.latitude,
-      longitude: data.longitude,
       phone: data.phone,
       isActive: data.isActive,
-      ...(ownerId !== undefined && { ownerId: ownerId || null })
-    }
+      ...(ownerId !== undefined && { ownerId: ownerId || null }),
+      ...(data.address !== undefined && {
+        address: {
+          update: {
+            address: data.address,
+            latitude: data.latitude ?? 12.1328,
+            longitude: data.longitude ?? -86.2504
+          }
+        }
+      })
+    },
+    include: { address: true }
   });
 
   await createAuditLog({ userId, action: 'update', entityType: 'clinic', entityId: id, details: JSON.stringify(data), ipAddress, userAgent });
@@ -150,7 +178,10 @@ export async function getClinicDoctors(clinicId: string, filters?: { search?: st
 export async function getClinic(id: string) {
   const clinic = await db.clinic.findUnique({
     where: { id },
-    include: { _count: { select: { doctorProfiles: true, appointments: true } } }
+    include: {
+      address: true,
+      _count: { select: { doctorProfiles: true, appointments: true } }
+    }
   });
   if (!clinic) throw new Error('NOT_FOUND');
   return clinic;
