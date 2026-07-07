@@ -173,6 +173,61 @@ export const createSaleSchema = z.object({
   })).min(1, 'Al menos un método de pago requerido'),
 });
 
+
+// === Validadores de Envíos/Delivery ===
+export const assignDriverSchema = z.object({
+  driver_id: z.string().min(1, 'ID de repartidor requerido'),
+});
+
+export const updateDeliveryStatusSchema = z.object({
+  status: z.enum(['picked_up', 'delivered', 'cancelled']),
+  notes: z.string().optional(),
+});
+
+export const recordCoordinateSchema = z.object({
+  latitude: z.number({ message: 'Latitud requerida' }),
+  longitude: z.number({ message: 'Longitud requerida' }),
+});
+
+export const verifyDeliveryQRSchema = z.object({
+  qr_content: z.string().min(1, 'Contenido QR requerido'),
+});
+
+// === Validadores de Relaciones Familiares ===
+export const createFamilyRelationshipSchema = z.object({
+  patient_id: z.string().min(1, 'ID de paciente requerido'),
+  relationship: z.string().min(1, 'Parentesco requerido'),
+  permissions: z.array(z.string()).optional(),
+});
+
+export const verifyFamilyRelationshipSchema = z.object({
+  verification_code: z.string().min(1, 'Código de verificación requerido'),
+});
+
+// === Validadores de Chats ===
+export const createChatSchema = z.object({
+  recipient_id: z.string().min(1, 'ID de receptor requerido'),
+  type: z.enum(['support', 'patient_doctor', 'patient_driver']).default('support'),
+  target_id: z.string().optional(),
+});
+
+export const sendMessageSchema = z.object({
+  content: z.string().min(1, 'El mensaje no puede estar vacío'),
+});
+
+// === Validadores de Notificaciones ===
+export const registerFCMTokenSchema = z.object({
+  token: z.string().min(1, 'Token FCM requerido'),
+});
+
+// === Validadores de Recordatorios ===
+export const createReminderSchema = z.object({
+  prescription_line_id: z.string().min(1, 'ID de línea de receta requerido'),
+  medicine_name: z.string().min(1, 'Nombre de medicamento requerido'),
+  dosage_instructions: z.string().min(1, 'Instrucciones de dosificación requeridas'),
+  scheduled_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'La hora debe estar en formato HH:MM (24h)'),
+});
+
 // === Helper de Validación de Cuerpos (Body) ===
 export function validateBody<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; error: NextResponse } {
   const result = schema.safeParse(data);

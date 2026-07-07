@@ -200,3 +200,94 @@ export async function refreshTokens(refreshToken: string) {
   await db.refreshToken.create({ data: { userId: user.id, tokenHash: newTokenHash, expiresAt } });
   return { access_token, refresh_token: newRefreshToken };
 }
+
+/**
+ * Revocar Refresh Token en Base de Datos
+ */
+export async function revokeToken(refreshToken: string) {
+  const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+  await db.refreshToken.updateMany({
+    where: { tokenHash, revokedAt: null },
+    data: { revokedAt: new Date() }
+  });
+}
+
+/**
+ * Solicitar recuperación de contraseña (genera token expirable)
+ */
+export async function requestPasswordReset(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await db.user.findUnique({ where: { email: normalizedEmail } });
+  if (!user) throw new Error('NOT_FOUND: Usuario no encontrado.');
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora de validez
+
+  await db.passwordResetToken.create({
+    data: {
+      email: normalizedEmail,
+      tokenHash,
+      expiresAt
+    }
+  });
+
+  // Enviar el correo usando nodemailer si está configurado
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const resetLink = `https://oasis-nicaragua.vercel.app/auth/reset-password?token=${rawToken}`;
+
+  if (smtpUser && smtpPass) {
+    const nodemailer = await import('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: smtpUser, pass: smtpPass }
+    });
+
+    await transporter.sendMail({
+      from: `"Oasis Nicaragua" <${smtpUser}>`,
+      to: normalizedEmail,
+      subject: 'Recuperación de Contraseña - Oasis Nicaragua',
+      html: `<p>Has solicitado restablecer tu contraseña en Oasis Nicaragua. Haz clic en el enlace para continuar:</p>
+             <p><a href="${resetLink}">${resetLink}</a></p>
+             <p>Este enlace expirará en 1 hora.</p>`
+    });
+  } else {
+    console.log(`\n--- [DEV MAIL: RECUPERACIÓN DE CONTRASEÑA] ---\nPara: ${normalizedEmail}\nEnlace: ${resetLink}\n---------------------------------------------\n`);
+  }
+
+  return { email: normalizedEmail, token: rawToken };
+}
+
+/**
+ * Restablecer contraseña usando token válido
+ */
+export async function resetPassword(token: string, newPassword: string) {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const resetRecord = await db.passwordResetToken.findFirst({
+    where: { tokenHash }
+  });
+
+  if (!resetRecord || resetRecord.isUsed || resetRecord.expiresAt < new Date()) {
+    throw new Error('TOKEN_INVALID: El token es inválido o ha expirado.');
+  }
+
+  const bcrypt = await import('bcryptjs');
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  return await db.$transaction(async (tx) => {
+    // 1. Actualizar contraseña del usuario
+    await tx.user.update({
+      where: { email: resetRecord.email },
+      data: { passwordHash }
+    });
+
+    // 2. Marcar token como usado
+    await tx.passwordResetToken.update({
+      where: { id: resetRecord.id },
+      data: { isUsed: true }
+    });
+
+    return { email: resetRecord.email };
+  });
+}
