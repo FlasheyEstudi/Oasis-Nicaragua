@@ -1,0 +1,23 @@
+{
+  "name": "Oasis Nicaragua",
+  "short_name": "Oasis",
+  "description": "Sistema de gestión de farmacias y clínicas Oasis Nicaragua",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/nuevo-logo-y-mascota/mascota.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/nuevo-logo-y-mascota/mascota.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

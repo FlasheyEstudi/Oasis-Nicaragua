@@ -1,0 +1,603 @@
+/* ============================================
+   OASIS 2026 - Modern Design System Extensions
+   Liquid Glass + Claymorphism + Kinetic Typography
+   ============================================ */
+
+@theme inline {
+  --color-oasis-teal: #00C2A0;
+  --color-oasis-mint: #5FF3B8;
+  --color-oasis-emerald: #10B981;
+  --color-oasis-sky: #0ea5e9;
+  --color-oasis-dark: #09090b;
+
+  --animate-blob-pulse: blob-pulse 8s infinite ease-in-out;
+  --animate-shimmer-fast: shimmer-fast 1.5s infinite linear;
+}
+
+:root {
+  /* Claymorphism Light Variables */
+  --clay-bg: rgba(255, 255, 255, 0.7);
+  --clay-border: rgba(255, 255, 255, 0.85);
+  --clay-shadow-inset: inset 2px 2px 5px rgba(255, 255, 255, 0.9), inset -3px -3px 7px rgba(165, 180, 252, 0.15);
+  --clay-shadow-out: 8px 8px 16px rgba(165, 180, 252, 0.18), -4px -4px 12px rgba(255, 255, 255, 0.8);
+  
+  /* Specular Light Blur */
+  --glass-specular: rgba(255, 255, 255, 0.45);
+}
+
+.dark {
+  /* Claymorphism Dark Variables */
+  --clay-bg: rgba(20, 20, 25, 0.6);
+  --clay-border: rgba(255, 255, 255, 0.08);
+  --clay-shadow-inset: inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -2px -2px 5px rgba(0, 0, 0, 0.4);
+  --clay-shadow-out: 8px 8px 24px rgba(0, 0, 0, 0.5), -4px -4px 12px rgba(255, 255, 255, 0.02);
+  
+  --glass-specular: rgba(255, 255, 255, 0.06);
+}
+
+/* --- CLAYMORPHISM --- */
+.clay-card {
+  background: var(--clay-bg);
+  border: 1px solid var(--clay-border);
+  border-radius: 24px;
+  box-shadow: var(--clay-shadow-inset), var(--clay-shadow-out);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.clay-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--clay-shadow-inset), 12px 12px 28px rgba(13, 148, 136, 0.08), -6px -6px 16px rgba(255, 255, 255, 0.9);
+}
+
+.dark .clay-card:hover {
+  box-shadow: var(--clay-shadow-inset), 12px 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* Claymorphic Interactive Button */
+.clay-btn {
+  background: linear-gradient(135deg, #00C2A0, #00B1A4);
+  color: white;
+  border-radius: 18px;
+  padding: 12px 24px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3), 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2),
+    0 8px 16px rgba(0, 194, 160, 0.25);
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clay-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    inset 3px 3px 6px rgba(255, 255, 255, 0.4), 
+    inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+    0 12px 20px rgba(0, 194, 160, 0.35);
+}
+
+.clay-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 
+    inset 1px 1px 2px rgba(255, 255, 255, 0.2), 
+    inset -1px -1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 194, 160, 0.2);
+}
+
+/* --- KINETIC TYPOGRAPHY --- */
+.kinetic-text {
+  font-weight: 800;
+  transition: font-weight 0.4s ease, letter-spacing 0.4s ease;
+  letter-spacing: -0.03em;
+}
+
+.kinetic-text:hover {
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.kinetic-pulse {
+  background-size: 200% auto;
+  background-image: linear-gradient(90deg, #00C2A0, #38bdf8, #5FF3B8, #00C2A0);
+  animation: kinetic-grad 4s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes kinetic-grad {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* --- LIQUID GLASS 3.0 SHADER BLOBS --- */
+.liquid-blob {
+  position: absolute;
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  background: linear-gradient(45deg, rgba(0, 194, 160, 0.15) 0%, rgba(56, 189, 248, 0.15) 100%);
+  filter: blur(50px);
+  animation: liquid-blob-morph 12s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes liquid-blob-morph {
+  0% {
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%;
+    transform: translate(30px, -40px) rotate(180deg) scale(1.1);
+  }
+  100% {
+    border-radius: 35% 65% 40% 60% / 50% 50% 50% 50%;
+    transform: translate(-20px, 20px) rotate(360deg) scale(0.9);
+  }
+}
+
+/* --- BENTO ASYMMETRIC / BROKEN GRIDS --- */
+.bento-asymmetric {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .bento-asymmetric {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-asymmetric {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- ACCESSIBILITY & PREFERS REDUCED MOTION --- */
+@media (prefers-reduced-motion: reduce) {
+  .clay-card, .clay-btn, .kinetic-text, .liquid-blob, .spatial-card, .pulse-badge-success, .liquid-input {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   OASIS 2026 - Spatial Glassmorphism 3.0
+   ============================================ */
+
+/* Variable de opacidad dinámica por sensor o contraste */
+:root {
+  --glass-opacity: 0.40;
+  --glass-blur: 24px;
+  --glass-saturate: 1.25;
+  --contrast-shield-tint: rgba(255, 255, 255, 0.05);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --glass-opacity: 0.80;
+    --glass-blur: 40px;
+    --glass-saturate: 1.5;
+    --contrast-shield-tint: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Capa de protección de contraste inteligente contra blobs */
+.clarity-shield {
+  background: rgba(var(--glass-bg-rgb, 255, 255, 255), var(--glass-opacity));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  box-shadow: 
+    inset 0 0 16px var(--contrast-shield-tint),
+    0 8px 32px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.dark .clarity-shield {
+  background: rgba(var(--glass-bg-rgb-dark, 15, 23, 42), calc(var(--glass-opacity) + 0.15));
+  border-color: rgba(0, 226, 192, 0.2);
+  box-shadow: 
+    inset 0 0 16px rgba(0, 226, 192, 0.03),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Spatial gyro-reactive card */
+.spatial-card {
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s ease, box-shadow 0.25s ease;
+  background: radial-gradient(
+    circle at calc(50% + var(--gyro-x, 0px)) calc(50% + var(--gyro-y, 0px)),
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  border: 1.5px solid rgba(13, 148, 136, 0.15);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.01),
+    0 12px 28px -4px rgba(13, 148, 136, 0.06),
+    0 20px 40px -10px rgba(0, 0, 0, 0.04);
+}
+
+.dark .spatial-card {
+  background: radial-gradient(
+    circle at calc(50% + var(--gyro-x, 0px)) calc(50% + var(--gyro-y, 0px)),
+    rgba(30, 41, 59, 0.6) 0%,
+    rgba(15, 23, 42, 0.45) 100%
+  );
+  border-color: rgba(0, 226, 192, 0.18);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    inset 0 0 12px rgba(0, 226, 192, 0.05),
+    0 12px 32px -8px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   OASIS 2026 - Claymorphic 3D Buttons
+   ============================================ */
+
+.clay-btn-primary {
+  background: linear-gradient(135deg, #00E2C0, #00A190);
+  color: #050505;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  box-shadow: 
+    0 8px 20px -4px rgba(0, 226, 192, 0.4), 
+    inset -3px -3px 8px rgba(0, 0, 0, 0.15), 
+    inset 3px 3px 8px rgba(255, 255, 255, 0.45);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.clay-btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 24px -4px rgba(0, 226, 192, 0.55), 
+    inset -4px -4px 10px rgba(0, 0, 0, 0.15), 
+    inset 4px 4px 10px rgba(255, 255, 255, 0.6);
+}
+
+.clay-btn-primary:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 
+    0 4px 8px -2px rgba(0, 226, 192, 0.3), 
+    inset -1px -1px 3px rgba(0, 0, 0, 0.15), 
+    inset 1px 1px 3px rgba(255, 255, 255, 0.4);
+}
+
+.clay-btn-success {
+  background: linear-gradient(135deg, #34D399, #059669);
+  color: white;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 18px;
+  box-shadow: 
+    0 8px 20px -4px rgba(16, 185, 129, 0.35), 
+    inset -3px -3px 8px rgba(0, 0, 0, 0.2), 
+    inset 3px 3px 8px rgba(255, 255, 255, 0.3);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.clay-btn-success:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 24px -4px rgba(16, 185, 129, 0.5), 
+    inset -4px -4px 10px rgba(0, 0, 0, 0.2), 
+    inset 4px 4px 10px rgba(255, 255, 255, 0.45);
+}
+
+.clay-btn-danger {
+  background: linear-gradient(135deg, #F87171, #EF4444);
+  color: white;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 18px;
+  box-shadow: 
+    0 8px 20px -4px rgba(239, 68, 68, 0.35), 
+    inset -3px -3px 8px rgba(0, 0, 0, 0.2), 
+    inset 3px 3px 8px rgba(255, 255, 255, 0.3);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.clay-btn-danger:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 24px -4px rgba(239, 68, 68, 0.5), 
+    inset -4px -4px 10px rgba(0, 0, 0, 0.2), 
+    inset 4px 4px 10px rgba(255, 255, 255, 0.45);
+}
+
+/* ============================================
+   OASIS 2026 - Liquid Inputs (Campos Líquidos)
+   ============================================ */
+
+.liquid-input-container {
+  position: relative;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.liquid-input {
+  width: 100%;
+  height: 54px;
+  padding: 22px 16px 6px 16px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1.5px solid rgba(13, 148, 136, 0.18);
+  border-radius: 16px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  color: var(--foreground);
+}
+
+.dark .liquid-input {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.liquid-input:focus {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: #00E2C0;
+  box-shadow: 
+    0 4px 16px rgba(0, 226, 192, 0.08), 
+    0 0 0 3px rgba(0, 226, 192, 0.15);
+  transform: translateY(-1px);
+}
+
+.dark .liquid-input:focus {
+  background: rgba(15, 23, 42, 0.7);
+  box-shadow: 
+    0 4px 20px rgba(0, 226, 192, 0.15), 
+    0 0 0 3px rgba(0, 226, 192, 0.2);
+}
+
+.liquid-label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), font-size 0.3s ease, color 0.2s ease;
+  transform-origin: left top;
+}
+
+.liquid-input:focus ~ .liquid-label,
+.liquid-input:not(:placeholder-shown) ~ .liquid-label {
+  transform: translateY(-135%) scale(0.8);
+  color: #00C2A0;
+  font-weight: 700;
+}
+
+.dark .liquid-input:focus ~ .liquid-label,
+.dark .liquid-input:not(:placeholder-shown) ~ .liquid-label {
+  color: #00E2C0;
+}
+
+/* ============================================
+   OASIS 2026 - Pulse Badges (Respiración Glow)
+   ============================================ */
+
+@keyframes pulse-glow-breath {
+  0%, 100% { box-shadow: 0 0 4px rgba(16, 185, 129, 0.2), 0 1px 2px rgba(0,0,0,0.1); }
+  50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.6), 0 2px 4px rgba(0,0,0,0.15); }
+}
+
+@keyframes pulse-glow-warning {
+  0%, 100% { box-shadow: 0 0 4px rgba(245, 158, 11, 0.2), 0 1px 2px rgba(0,0,0,0.1); }
+  50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.6), 0 2px 4px rgba(0,0,0,0.15); }
+}
+
+.pulse-badge-success {
+  animation: pulse-glow-breath 3s ease-in-out infinite;
+}
+
+.pulse-badge-warning {
+  animation: pulse-glow-warning 3s ease-in-out infinite;
+}
+
+/* ============================================
+   OASIS 2026 - Fluid Table Horizon
+   ============================================ */
+
+.fluid-table-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--card);
+}
+
+.fluid-table-scroll {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+/* Fading edge indicators for horizontal content */
+.fluid-table-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0; width: 32px;
+  background: linear-gradient(90deg, var(--background), transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  z-index: 10;
+}
+
+.fluid-table-container::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; width: 32px;
+  background: linear-gradient(90deg, transparent, var(--background));
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  opacity: 1;
+  z-index: 10;
+}
+
+.fluid-table-container.scroll-started::before {
+  opacity: 1;
+}
+
+.fluid-table-container.scroll-ended::after {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   OASIS 2026 - Responsive Delivery Container & Card Optimization System
+   Specifically optimized to prevent wasted horizontal screen space on mobile
+   ========================================================================== */
+
+/* Smart responsive wrapper replacing generic inline padding */
+.delivery-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 80rem; /* 1280px equivalent to max-w-7xl */
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 1rem;
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 480px) {
+  .delivery-container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+@media (min-width: 768px) {
+  .delivery-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+  }
+}
+
+/* Card responsive helper to ensure maximum visual width on mobile */
+.delivery-card {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .delivery-card {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+}
+
+/* Specific Grid layout to control gaps dynamically on mobile */
+.delivery-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px; /* Small gap on mobile to save vertical & visual space */
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .delivery-grid {
+    gap: 1.5rem;
+  }
+}
+
+/* Bento columns responsive */
+.delivery-grid-cols-2 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .delivery-grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.delivery-grid-cols-3 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .delivery-grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .delivery-grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Specific split columns for home */
+.delivery-home-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 1024px) {
+  .delivery-home-split {
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* ==========================================================================
+   OASIS 2026 - No-Card Fluid Section System (Premium Mobile UI)
+   Converts boxy, generic cards into elegant, borderless native sections on mobile.
+   ========================================================================== */
+
+.no-card-mobile {
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 767px) {
+  .no-card-mobile {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    position: relative;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Specular glow removal on mobile */
+  .no-card-mobile::before,
+  .no-card-mobile::after {
+    display: none !important;
+  }
+
+  /* Add an elegant, subtle separator between sections */
+  .no-card-mobile:not(:last-child) {
+    border-bottom: 1px solid rgba(226, 232, 240, 0.4) !important;
+    padding-bottom: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .dark .no-card-mobile:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+}
+
+
+
